@@ -1,0 +1,124 @@
+---
+title: "analysis"
+author: "Thorkild Kappel"
+date: "2024-05-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+df = read.csv("/Users/thorkildkappel/Desktop/4. sem/Soc cult-paper/archive/results_df.csv")
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+
+
+```{r}
+df$label = as.factor(df$label)
+
+df$label <- factor(df$label, levels = c(0, 1), labels = c("Human", "LLM"))
+
+sent_length = df %>% ggplot(aes(x = avg_sentence_length, colour = label)) +
+  geom_density(alpha = 0.001)+
+  labs(x = "Sentence length") +
+  xlim(0, 70)
+
+
+type_token_ratio = df %>% ggplot(aes(x = type_token_ratio, colour = label)) +
+  geom_density(alpha = 0.001)+
+  labs(x = "Type-token Ratio") +
+  xlim(0, 1)
+
+flesch_kincaid_grade = df %>%
+  ggplot(aes(x = flesch_kincaid_grade, colour = label)) +
+  geom_density(alpha = 0.01) +  # Adjusted alpha for better visibility
+  labs(x = "Flesch Kincaid Grade") +
+  xlim(0, 25) +
+  geom_vline(xintercept = c(5, 11), linetype = "dashed", color = "black") +  # Grade boundaries
+  geom_text(aes(x = 2, label = "Age 11 and younger"), y = Inf, vjust = 1.5, color = "black", size = 3, check_overlap = TRUE) +
+  geom_text(aes(x = 8, label = "Age 11-17"), y = Inf, vjust = 1.5, color = "black", size = 3, check_overlap = TRUE) +
+  geom_text(aes(x = 14, label = "17 years and older"), y = Inf, vjust = 1.5, color = "black", size = 3, check_overlap = TRUE) +
+  guides(colour = guide_legend(title = "Label"), color = FALSE)  # Control legend
+
+flesch_kincaid_grade
+type_token_ratio
+sent_length
+
+
+
+#ggsave("/Users/thorkildkappel/Desktop/4. sem/Soc cult-paper/archive/sent_length.png", plot = sent_length, width = 8, height = 6)
+#ggsave("/Users/thorkildkappel/Desktop/4. sem/Soc cult-paper/archive/type_token_ration.png", plot = type_token_ration, width = 8, height = 6)
+ggsave("/Users/thorkildkappel/Desktop/4. sem/Soc cult-paper/archive/flesch_kincaid_grade.png", plot = flesch_kincaid_grade, width = 8, height = 6)
+
+```
+
+```{r}
+qqnorm(df$avg_sentence_length)
+qqnorm(df$type_token_ratio)
+qqnorm(df$automated_readability_index)
+```
+```{r}
+pos_df = read.csv("/Users/thorkildkappel/Desktop/4. sem/Soc cult-paper/archive/POS_df.csv")
+
+```
+
+```{r}
+pos_df$label = as.factor(pos_df$label)
+
+
+
+pos_df$label <- factor(pos_df$label, levels = c(0, 1), labels = c("Human", "LLM"))
+```
+
+```{r}
+pos_df = select(pos_df, -c(X.1, X, INTJ, SYM))
+#pos_df = detach(pos_df, columns = c("X.1", "X", "INTJ", "SYM"))
+
+```
+
+
+```{r}
+
+# List of word classes (replace with actual column names if different)
+word_classes <- colnames(pos_df)[1:ncol(pos_df)]
+
+# Reshape the data for easier plotting with ggplot2
+pos_df_long <- pos_df %>%
+  pivot_longer(cols = -label, names_to = "word_class", values_to = "value")
+
+# Summarize data for mean
+summary_df <- pos_df_long %>%
+  group_by(label, word_class) %>%
+  summarize(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
+
+# Create the combined plot
+p <- ggplot(pos_df_long, aes(x = word_class, y = value, fill = factor(label))) +
+  geom_bar(data = summary_df, aes(x = word_class, y = mean_value), 
+           position = position_dodge(width = 0.75), stat = "identity", alpha = 0.7) +
+  geom_boxplot(position = position_dodge(width = 0.75), alpha = 0.3, outlier.size = 1) +
+  labs(title = "Mean and Distribution of Word Classes",
+       x = "Word Class", 
+       y = "Proportion",
+       fill = "Label") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = c("orange", "cyan")) +
+  theme(plot.margin = margin(1, 1, 1, 1, "cm"),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0, 0.3)
+
+# Print the plot with adjusted width
+ggsave("/Users/thorkildkappel/Desktop/4. sem/Soc cult-paper/archive/oOutput.png", plot = p, width = 12, height = 8)
+print(p)
+```
+
+

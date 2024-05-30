@@ -1,0 +1,58 @@
+---
+title: "Analysis"
+author: "Thorkild Kappel"
+date: "2024-05-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+pacman::p_load(tidytext, dplyr)
+```
+
+
+```{r}
+df = read.csv("/Users/thorkildkappel/Desktop/4. sem/Soc cult-paper/archive/train_v4_drcat_01.csv")
+```
+
+
+
+```{r}
+words = df %>%
+  unnest_tokens(word, text) %>%
+  count(label, word, sort = TRUE)
+
+
+```
+
+
+```{r}
+total_words <- words %>% group_by(label) %>% summarize(total = sum(n))
+words <- left_join(words, total_words)
+```
+
+
+```{r}
+words <- words %>%
+  bind_tf_idf(word, label, n)
+words
+```
+
+```{r}
+words %>%
+  select(-total) %>%
+  arrange(desc(tf_idf))
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(data = words, aes(word,))
+  geom_histogram()
+```
+
